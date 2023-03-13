@@ -5,12 +5,14 @@ import { useSelector, useDispatch } from 'react-redux'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { setTasks } from '../redux/reducer'
 import { useNavigation } from '@react-navigation/native'
+import CheckBox from '@react-native-community/checkbox'
 const Task = () => {
   const { tasks, taskId } = useSelector(state => state.task);
   const dispatch = useDispatch();
   const navigation = useNavigation();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [done, setDone] = useState(false);
 
 
   useEffect(() => {
@@ -23,6 +25,7 @@ const Task = () => {
     if (task) {
       setTitle(task.title)
       setDescription(task.description)
+      setDone(task.done)
     }
   }
 
@@ -35,7 +38,8 @@ const Task = () => {
         const task = {
           id: taskId,
           title: title,
-          description: description
+          description: description,
+          done:done
         }
 
         const index = tasks.findIndex(task => task.id == taskId)
@@ -71,8 +75,16 @@ const Task = () => {
         multiline
         onChangeText={(value) => setDescription(value)}
       />
+      <View style={styles.checkbox}>
 
-
+        <CheckBox
+          value={done}
+          onValueChange={(val) => setDone(val)}
+        />
+        <Text
+          style={styles.text}
+        >Is done...?</Text>
+      </View>
       <CustomButton
         title="Save task"
         color="#1eb900"
@@ -98,6 +110,14 @@ const styles = StyleSheet.create({
     fontSize: 20,
     margin: 10,
     paddingHorizontal: 10
+  }, checkbox: {
+    flexDirection: 'row',
+    margin: 10,
+    alignItems: 'center'
+  },
+  text: {
+    fontSize: 20,
+    color: "#000000"
   }
 })
 
