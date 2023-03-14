@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TextInput, Alert, TouchableOpacity } from 'react-native'
+import { View, Text, StyleSheet, TextInput, Alert, TouchableOpacity, Modal, PushNotificationIOS } from 'react-native'
 import React, { useState, useEffect } from 'react'
 import CustomButton from '../utils/CustomButton'
 import { useSelector, useDispatch } from 'react-redux'
@@ -6,7 +6,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { setTasks } from '../redux/reducer'
 import { useNavigation } from '@react-navigation/native'
 import CheckBox from '@react-native-community/checkbox';
-import FontAwesome5 from 'react-native-vector-icons/FontAwesome5'
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
+import PushNotification from "react-native-push-notification";
+
 const Task = () => {
   const { tasks, taskId } = useSelector(state => state.task);
   const dispatch = useDispatch();
@@ -14,7 +16,9 @@ const Task = () => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [done, setDone] = useState(false);
-  const [color, setColor] = useState('white')
+  const [color, setColor] = useState('white');
+  const [showBellModal, setShowBellModal] = useState(false);
+  const [bellTime, setBellTime] = useState("1")
 
 
   useEffect(() => {
@@ -43,7 +47,7 @@ const Task = () => {
           title: title,
           description: description,
           done: done,
-          color:color
+          color: color
         }
 
         const index = tasks.findIndex(task => task.id == taskId)
@@ -64,8 +68,56 @@ const Task = () => {
       }
     }
   }
+
+  const setTaskAlarm = () => {
+    PushNotification.localNotificationSchedule({
+      channelId: 'task-channel',
+      title: title,
+      message: description,
+      date: new Date(Date.now() + parseInt(bellTime) * 60 * 1000),
+      allowWhileIdle: true,
+    });
+
+    setShowBellModal(false);
+  }
   return (
     <View style={styles.body}>
+
+      <Modal
+        visible={showBellModal}
+        transparent
+        onRequestClose={() => setShowBellModal(false)}
+        animationType='slide'
+        hardwareAccelerated
+      >
+        <View style={styles.centered_view}>
+          <View style={styles.bell_modal}>
+            <View style={styles.bell_body}>
+              <Text style={styles.text}>Remind me after</Text>
+              <TextInput style={styles.bell_input}
+                keyboardType='numeric'
+                value={bellTime}
+                onChangeText={(value) => setBellTime(value)}
+              />
+              <Text style={styles.text}>minutes</Text>
+            </View>
+            <View style={styles.bell_buttons}>
+              <TouchableOpacity
+                style={styles.bell_cancel_button}
+                onPress={() => setShowBellModal(false)}
+              >
+                <Text>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={setTaskAlarm}
+                style={styles.bell_ok_button}
+              >
+                <Text>Ok</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
       <TextInput
         value={title}
         style={styles.input}
@@ -111,6 +163,15 @@ const Task = () => {
           {color === 'green' &&
             <FontAwesome5 name="check" size={25} color="#000000" />
           }
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.extra_row}>
+        <TouchableOpacity
+          style={styles.extra_button}
+          onPress={() => setShowBellModal(true)}
+        >
+          <FontAwesome5 name="bell" size={25} color="#ffffff" />
         </TouchableOpacity>
       </View>
       <View style={styles.checkbox}>
@@ -195,6 +256,68 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderTopRightRadius: 10,
     borderBottomRightRadius: 10
+  },
+  extra_row: {
+    flexDirection: 'row',
+    marginVertical: 10,
+  },
+  extra_button: {
+    flex: 1,
+    height: 50,
+    backgroundColor: "#0080ff",
+    borderRadius: 10,
+    marginHorizontal: 5,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  centered_view: {
+    flex: 1,
+    backgroundColor: "#00000099",
+    justifyContent: 'center',
+    alignItems: 'center'
+  }
+  , bell_modal: {
+    width: 300,
+    height: 200,
+    backgroundColor: "#ffffff",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#000000"
+  },
+  bell_body: {
+    height: 150,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  bell_buttons: {
+    flexDirection: 'row',
+    height: 50
+  },
+  bell_input: {
+    width: 50,
+    borderWidth: 1,
+    borderColor: "#555555",
+    backgroundColor: "#ffffff",
+    borderRadius: 10,
+    textAlign: 'center',
+    fontSize: 20,
+    margin: 10
+  },
+  bell_cancel_button: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#00000",
+    borderBottomLeftRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  bell_ok_button: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#00000",
+    borderBottomRightRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center'
   }
 })
 
