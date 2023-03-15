@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TextInput, Alert, TouchableOpacity, Modal, PushNotificationIOS } from 'react-native'
+import { View, Text, StyleSheet, TextInput, Alert, TouchableOpacity, Modal, Image, ScrollView } from 'react-native'
 import React, { useState, useEffect } from 'react'
 import CustomButton from '../utils/CustomButton'
 import { useSelector, useDispatch } from 'react-redux'
@@ -8,6 +8,7 @@ import { useNavigation } from '@react-navigation/native'
 import CheckBox from '@react-native-community/checkbox';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import PushNotification from "react-native-push-notification";
+import RNFS from 'react-native-fs'
 
 const Task = () => {
   const { tasks, taskId } = useSelector(state => state.task);
@@ -18,11 +19,16 @@ const Task = () => {
   const [done, setDone] = useState(false);
   const [color, setColor] = useState('white');
   const [showBellModal, setShowBellModal] = useState(false);
-  const [bellTime, setBellTime] = useState("1")
+  const [bellTime, setBellTime] = useState("1");
+  const [image, setImage] = useState("");
 
 
   useEffect(() => {
-    getTask()
+
+    navigation.addListener('focus', () => {
+
+      getTask()
+    })
   }, [])
 
 
@@ -33,6 +39,7 @@ const Task = () => {
       setDescription(task.description)
       setDone(task.done)
       setColor(task.color)
+      setImage(task.imageUrl)
     }
   }
 
@@ -47,7 +54,8 @@ const Task = () => {
           title: title,
           description: description,
           done: done,
-          color: color
+          color: color,
+          imageUrl: image
         }
 
         const index = tasks.findIndex(task => task.id == taskId)
@@ -80,117 +88,162 @@ const Task = () => {
 
     setShowBellModal(false);
   }
-  return (
-    <View style={styles.body}>
+  const deleteImage = async () => {
 
-      <Modal
-        visible={showBellModal}
-        transparent
-        onRequestClose={() => setShowBellModal(false)}
-        animationType='slide'
-        hardwareAccelerated
-      >
-        <View style={styles.centered_view}>
-          <View style={styles.bell_modal}>
-            <View style={styles.bell_body}>
-              <Text style={styles.text}>Remind me after</Text>
-              <TextInput style={styles.bell_input}
-                keyboardType='numeric'
-                value={bellTime}
-                onChangeText={(value) => setBellTime(value)}
-              />
-              <Text style={styles.text}>minutes</Text>
-            </View>
-            <View style={styles.bell_buttons}>
-              <TouchableOpacity
-                style={styles.bell_cancel_button}
-                onPress={() => setShowBellModal(false)}
-              >
-                <Text>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={setTaskAlarm}
-                style={styles.bell_ok_button}
-              >
-                <Text>Ok</Text>
-              </TouchableOpacity>
+    try {
+      RNFS.unlink(image);
+      const taskIndex = tasks.findIndex(task => task.id === taskId);
+      if (taskIndex > -1) {
+        let newTasks = [...tasks];
+        newTasks[taskIndex].imageUrl = '';
+        await AsyncStorage.setItem('Tasks', JSON.stringify(newTasks));
+        dispatch(setTasks(newTasks));
+        getTask();
+        Alert.alert('Success', 'Image deleted succesfully');
+        navigation.goBack();
+      }
+    } catch (error) {
+      console.log(error)
+    }
+  }
+  return (
+    <ScrollView>
+
+      <View style={styles.body}>
+
+        <Modal
+          visible={showBellModal}
+          transparent
+          onRequestClose={() => setShowBellModal(false)}
+          animationType='slide'
+          hardwareAccelerated
+        >
+          <View style={styles.centered_view}>
+            <View style={styles.bell_modal}>
+              <View style={styles.bell_body}>
+                <Text style={styles.text}>Remind me after</Text>
+                <TextInput style={styles.bell_input}
+                  keyboardType='numeric'
+                  value={bellTime}
+                  onChangeText={(value) => setBellTime(value)}
+                />
+                <Text style={styles.text}>minutes</Text>
+              </View>
+              <View style={styles.bell_buttons}>
+                <TouchableOpacity
+                  style={styles.bell_cancel_button}
+                  onPress={() => setShowBellModal(false)}
+                >
+                  <Text>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={setTaskAlarm}
+                  style={styles.bell_ok_button}
+                >
+                  <Text>Ok</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
-      <TextInput
-        value={title}
-        style={styles.input}
-        placeholder="Title"
-        onChangeText={(value) => setTitle(value)}
-      />
-      <TextInput
-        value={description}
-        style={styles.input}
-        placeholder="Description"
-        multiline
-        onChangeText={(value) => setDescription(value)}
-      />
-      <View style={styles.color_bar}>
-        <TouchableOpacity
-          style={styles.color_white}
-          onPress={() => setColor('white')}
-        >
-          {color === 'white' &&
-            <FontAwesome5 name="check" size={25} color="#000000" />
-          }
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.color_red}
-          onPress={() => setColor('red')}
-        >
-          {color === 'red' &&
-            <FontAwesome5 name="check" size={25} color="#000000" />
-          }
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.color_blue}
-          onPress={() => setColor('blue')}
-        >
-          {color === 'blue' &&
-            <FontAwesome5 name="check" size={25} color="#000000" />
-          }
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.color_green}
-          onPress={() => setColor('green')}
-        >
-          {color === 'green' &&
-            <FontAwesome5 name="check" size={25} color="#000000" />
-          }
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.extra_row}>
-        <TouchableOpacity
-          style={styles.extra_button}
-          onPress={() => setShowBellModal(true)}
-        >
-          <FontAwesome5 name="bell" size={25} color="#ffffff" />
-        </TouchableOpacity>
-      </View>
-      <View style={styles.checkbox}>
-
-        <CheckBox
-          value={done}
-          onValueChange={(val) => setDone(val)}
+        </Modal>
+        <TextInput
+          value={title}
+          style={styles.input}
+          placeholder="Title"
+          onChangeText={(value) => setTitle(value)}
         />
-        <Text
-          style={styles.text}
-        >Is done...?</Text>
+        <TextInput
+          value={description}
+          style={styles.input}
+          placeholder="Description"
+          multiline
+          onChangeText={(value) => setDescription(value)}
+        />
+        <View style={styles.color_bar}>
+          <TouchableOpacity
+            style={styles.color_white}
+            onPress={() => setColor('white')}
+          >
+            {color === 'white' &&
+              <FontAwesome5 name="check" size={25} color="#000000" />
+            }
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.color_red}
+            onPress={() => setColor('red')}
+          >
+            {color === 'red' &&
+              <FontAwesome5 name="check" size={25} color="#000000" />
+            }
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.color_blue}
+            onPress={() => setColor('blue')}
+          >
+            {color === 'blue' &&
+              <FontAwesome5 name="check" size={25} color="#000000" />
+            }
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.color_green}
+            onPress={() => setColor('green')}
+          >
+            {color === 'green' &&
+              <FontAwesome5 name="check" size={25} color="#000000" />
+            }
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.extra_row}>
+          <TouchableOpacity
+            style={styles.extra_button}
+            onPress={() => setShowBellModal(true)}
+          >
+            <FontAwesome5 name="bell" size={25} color="#ffffff" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.extra_button}
+            onPress={() => navigation.navigate('Camera', {
+              id: taskId
+            })
+
+            }
+          >
+            <FontAwesome5 name="camera" size={25} color="#ffffff" />
+          </TouchableOpacity>
+        </View>
+        {image ? <View>
+          <Image
+            source={{ uri: image }}
+            style={styles.image}
+          />
+          <TouchableOpacity
+            style={styles.delete}
+            onPress={() => deleteImage()}
+          >
+            <FontAwesome5 name="trash" size={25} color="#ff3636" />
+          </TouchableOpacity>
+
+        </View> : null}
+        <View style={styles.checkbox}>
+
+          <CheckBox
+            value={done}
+            onValueChange={(val) => setDone(val)}
+          />
+          <Text
+            style={styles.text}
+          >Is done...?</Text>
+        </View>
+        <CustomButton
+          title="Save task"
+          color="#1eb900"
+          style={{ width: '100%' }}
+          onPressFunction={setTask}
+        />
       </View>
-      <CustomButton
-        title="Save task"
-        color="#1eb900"
-        style={{ width: '100%' }}
-        onPressFunction={setTask}
-      />
-    </View>
+    </ScrollView>
+
   )
 }
 const styles = StyleSheet.create({
@@ -318,6 +371,24 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 20,
     justifyContent: 'center',
     alignItems: 'center'
+  },
+  image: {
+    width: 300,
+    height: 300,
+    margin: 20,
+    resizeMode: 'stretch'
+  },
+  delete: {
+    width: 50,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'absolute',
+    right: 20,
+    bottom: 20,
+    backgroundColor: "#ffffff80",
+    margin: 10,
+    borderRadius: 50
   }
 })
 

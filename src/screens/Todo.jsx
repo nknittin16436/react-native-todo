@@ -24,10 +24,8 @@ const Todo = () => {
         try {
 
             const tasks = await AsyncStorage.getItem('Tasks');
-            console.log("effect", tasks);
             if (tasks) {
                 const parsedTask = JSON.parse(tasks);
-                console.log("parsed", parsedTask)
                 dispatch(setTasks(parsedTask));
             }
         } catch (error) {

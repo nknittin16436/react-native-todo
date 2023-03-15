@@ -11,6 +11,7 @@ import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import Task from './screens/Task';
 import { store } from './redux/store'
 import { Provider } from 'react-redux'
+import Camera from './screens/Camera';
 
 const Tab = createBottomTabNavigator();
 const RootStack = createNativeStackNavigator();
@@ -79,6 +80,7 @@ const App = () => {
           />
           <RootStack.Screen name="My Tasks" component={HomeTabs} />
           <RootStack.Screen name="Task" component={Task} />
+          <RootStack.Screen name="Camera" component={Camera} />
         </RootStack.Navigator>
       </NavigationContainer>
     </Provider>
